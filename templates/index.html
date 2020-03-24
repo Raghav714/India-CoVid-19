@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Report</title>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js'></script>
+    <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet"/>
+</head>
+<style>
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+
+</style>
+<body>
+<div class="container">
+    <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm">
+        <h2 class="my-0 mr-md-auto font-weight-normal">CoVid-19 Cases Tracker for India</h2>
+    </div>
+    <div class="row">
+        <div class="col-sm-4">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-header">Confirmed Cases</div>
+                <div class="card-body">
+                    <h1 class="card-title" id="confirmed">{{ confirmed_total }}</h1>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card text-white bg-danger mb-3">
+                <div class="card-header">Deaths</div>
+                <div class="card-body">
+                    <h1 class="card-title" id="death">{{ death_total }}</h1>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-header">Recovered</div>
+                <div class="card-body">
+                    <h1 class="card-title" id="recovered">{{ recovered_total }}</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
+            <h2 class="display-7">State / UT wise Data</h2>
+        </div>
+    </div>
+    <div class="row">
+    	<table>
+            {% for table in tables %}
+            <tr>
+               <td>{{ table|safe }} </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+<center>
+<h1 style="color: blue;">CoVid-19 Cases in India</h1>
+<canvas id="chart4" width="600" height="400"></canvas>
+    <script>
+      var pieData = [
+        {% for item, label, colors in set %}
+          {
+            value: {{item}},
+            label: "{{label}}",
+            color : "{{colors}}"
+          },
+        {% endfor %}
+      ];
+      // draw pie chart
+      new Chart(document.getElementById("chart4").getContext("2d")).Pie(pieData);
+
+    </script>
+
+    <h1 style="color: blue;">State/UT wise breakdown for India</h1>
+    <h2 style="color: orange;">Confirmed Cases</h2>
+    <canvas id="chart1" width="600" height="400"></canvas>
+    <script>
+      // bar chart data
+      var barData1 = {
+        labels : [
+          {% for item in labels %}
+           "{{ item }}",
+          {% endfor %}
+	],
+
+        datasets : [{
+          fillColor: "rgba(255,165,0,1)",
+          strokeColor: "rgba(151,187,205,1)",
+          pointColor: "rgba(151,187,205,1)",
+          data : [
+            {% for item in values_cases %}
+               "{{ item }}",
+              {% endfor %}
+	    ]
+          }
+        ]
+      }
+
+     // get bar chart canvas
+     var mychart1 = document.getElementById("chart1").getContext("2d");
+	
+       max = {{max1}}
+       steps = max/5
+
+     // draw bar chart
+     new Chart(mychart1).Bar(barData1, {
+       scaleOverride: true,
+       scaleSteps: steps,
+       scaleStepWidth: Math.ceil(max / steps),
+       scaleStartValue: 0,
+       scaleShowVerticalLines: true,
+       scaleShowGridLines : true,
+       barShowStroke : true,
+       scaleShowLabels: true
+       }
+     );
+
+    </script>
+
+    <h2 style="color: red;">Deaths</h2>
+    <canvas id="chart2" width="600" height="400"></canvas>
+    <script>
+      // bar chart data
+      var barData2 = {
+        labels : [
+          {% for item in labels %}
+           "{{ item }}",
+          {% endfor %}
+	],
+
+        datasets : [{
+          fillColor: "rgba(255,0,0,1)",
+          strokeColor: "rgba(151,187,205,1)",
+          pointColor: "rgba(151,187,205,1)",
+          data : [
+            {% for item in values_dead %}
+               "{{ item }}",
+              {% endfor %}
+	    ]
+          }
+        ]
+      }
+
+     // get bar chart canvas
+     var mychart2 = document.getElementById("chart2").getContext("2d");
+	max = {{max2}}
+       steps = max/2
+       
+
+     // draw bar chart
+     new Chart(mychart2).Bar(barData2, {
+       scaleOverride: true,
+       scaleSteps: steps,
+       scaleStepWidth: Math.ceil(max / steps),
+       scaleStartValue: 0,
+       scaleShowVerticalLines: true,
+       scaleShowGridLines : true,
+       barShowStroke : true,
+       scaleShowLabels: true
+       }
+     );
+
+    </script>
+
+    <h2 style="color: green;">Recovered</h2>
+    <canvas id="chart3" width="800" height="400"></canvas>
+    <script>
+      // bar chart data
+      var barData3 = {
+        labels : [
+          {% for item in labels %}
+           "{{ item }}",
+          {% endfor %}
+	],
+
+        datasets : [{
+          fillColor: "rgba(0,255,0,1)",
+          strokeColor: "rgba(151,187,205,1)",
+          pointColor: "rgba(151,187,205,1)",
+          data : [
+            {% for item in values_cured %}
+               "{{ item }}",
+              {% endfor %}
+	    ]
+          }
+        ]
+      }
+
+     // get bar chart canvas
+     var mychart3 = document.getElementById("chart3").getContext("2d");
+	max = {{max3}}
+       steps = max/4
+       
+
+     // draw bar chart
+     new Chart(mychart3).Bar(barData3, {
+       scaleOverride: true,
+       scaleSteps: steps,
+       scaleStepWidth: Math.ceil(max / steps),
+       scaleStartValue: 0,
+       scaleShowVerticalLines: true,
+       scaleShowGridLines : true,
+       barShowStroke : true,
+       scaleShowLabels: true
+       }
+     );
+
+    </script>
+
+<h1 style="color: blue;">CoVid-19 cases in India</h1>
+<img src="{{ case }}" alt="State wise cases">
+
+    <h1 style="color: blue;">Daily Update in India on CoVid-19</h1>
+    <h2 style="color: orange;">Confirmed cases</h2>
+
+    <canvas id="chart5" width="600" height="400"></canvas>
+    <script>
+
+      // bar chart data
+      var barData4 = {
+        labels : [
+          {% for item in dates %}
+            "{{ item }}",
+          {% endfor %}
+        ],
+
+        datasets : [{
+          fillColor: "rgba(255,165,0,0.1)",
+          strokeColor: "rgba(255,165,0,1)",
+          pointColor: "rgba(151,187,205,1)",
+          pointStrokeColor: "#fff",
+          pointHighlightFill: "#fff",
+          pointHighlightStroke: "rgba(151,187,205,1)",
+          bezierCurve : false,
+          data : [
+	    {% for item in total_in %}
+              {{ item }},
+            {% endfor %}]
+          }
+	]
+      }
+	
+
+      Chart.defaults.global.animationSteps = 50;
+      Chart.defaults.global.tooltipYPadding = 16;
+      Chart.defaults.global.tooltipCornerRadius = 0;
+      Chart.defaults.global.tooltipTitleFontStyle = "normal";
+      Chart.defaults.global.tooltipFillColor = "rgba(0,0,0,0.8)";
+      Chart.defaults.global.animationEasing = "easeOutBounce";
+      Chart.defaults.global.responsive = false;
+      Chart.defaults.global.scaleLineColor = "black";
+      Chart.defaults.global.scaleFontSize = 16;
+
+      // get bar chart canvas
+      var mychart5 = document.getElementById("chart5").getContext("2d");
+	max = {{ max4 }}
+      steps = max/30
+      // draw bar chart
+      var LineChartDemo = new Chart(mychart5).Line(barData4, {
+        scaleOverride: true,
+        scaleSteps: steps,
+        scaleStepWidth: Math.ceil(max / steps),
+        scaleStartValue: 0,
+        scaleShowVerticalLines: true,
+        scaleShowGridLines : true,
+        barShowStroke : true,
+        scaleShowLabels: true,
+        bezierCurve: false,
+      });
+
+    </script>
+
+
+    <h2 style="color: red;">Death</h2>
+    <canvas id="chart6" width="600" height="400"></canvas>
+    <script>
+
+      // bar chart data
+      var barData5 = {
+        labels : [
+          {% for item in dates %}
+            "{{ item }}",
+          {% endfor %}
+        ],
+
+        datasets : [{
+          fillColor: "rgba(255,0,0,0.1)",
+          strokeColor: "rgba(255,0,0,1)",
+          pointColor: "rgba(151,187,205,1)",
+          pointStrokeColor: "#fff",
+          pointHighlightFill: "#fff",
+          pointHighlightStroke: "rgba(151,187,205,1)",
+          bezierCurve : false,
+          data : [
+	    {% for item in total_dead %}
+              {{ item }},
+            {% endfor %}]
+          }
+	]
+      }
+	
+
+      Chart.defaults.global.animationSteps = 50;
+      Chart.defaults.global.tooltipYPadding = 16;
+      Chart.defaults.global.tooltipCornerRadius = 0;
+      Chart.defaults.global.tooltipTitleFontStyle = "normal";
+      Chart.defaults.global.tooltipFillColor = "rgba(0,0,0,0.8)";
+      Chart.defaults.global.animationEasing = "easeOutBounce";
+      Chart.defaults.global.responsive = false;
+      Chart.defaults.global.scaleLineColor = "black";
+      Chart.defaults.global.scaleFontSize = 16;
+
+      // get bar chart canvas
+      var mychart6 = document.getElementById("chart6").getContext("2d");
+	max = {{ max5 }}
+      steps = max/3
+      // draw bar chart
+      var LineChartDemo = new Chart(mychart6).Line(barData5, {
+        scaleOverride: true,
+        scaleSteps: steps,
+        scaleStepWidth: Math.ceil(max / steps),
+        scaleStartValue: 0,
+        scaleShowVerticalLines: true,
+        scaleShowGridLines : true,
+        barShowStroke : true,
+        scaleShowLabels: true,
+        bezierCurve: false,
+      });
+
+    </script>
+
+
+    <h2 style="color: green;">Recovered</h2>
+
+    <canvas id="chart7" width="600" height="400"></canvas>
+    <script>
+
+      // bar chart data
+      var barData6 = {
+        labels : [
+          {% for item in dates %}
+            "{{ item }}",
+          {% endfor %}
+        ],
+
+        datasets : [{
+          fillColor: "rgba(0,255,0,0.1)",
+          strokeColor: "rgba(0,255,0,1)",
+          pointColor: "rgba(151,187,205,1)",
+          pointStrokeColor: "#fff",
+          pointHighlightFill: "#fff",
+          pointHighlightStroke: "rgba(151,187,205,1)",
+          bezierCurve : false,
+          data : [
+	    {% for item in total_cured %}
+              {{ item }},
+            {% endfor %}]
+          }
+	]
+      }
+	
+
+      Chart.defaults.global.animationSteps = 50;
+      Chart.defaults.global.tooltipYPadding = 16;
+      Chart.defaults.global.tooltipCornerRadius = 0;
+      Chart.defaults.global.tooltipTitleFontStyle = "normal";
+      Chart.defaults.global.tooltipFillColor = "rgba(0,0,0,0.8)";
+      Chart.defaults.global.animationEasing = "easeOutBounce";
+      Chart.defaults.global.responsive = false;
+      Chart.defaults.global.scaleLineColor = "black";
+      Chart.defaults.global.scaleFontSize = 16;
+
+      // get bar chart canvas
+      var mychart7 = document.getElementById("chart7").getContext("2d");
+	max = {{ max6 }}
+      steps = max/5
+      // draw bar chart
+      var LineChartDemo = new Chart(mychart7).Line(barData6, {
+        scaleOverride: true,
+        scaleSteps: steps,
+        scaleStepWidth: Math.ceil(max / steps),
+        scaleStartValue: 0,
+        scaleShowVerticalLines: true,
+        scaleShowGridLines : true,
+        barShowStroke : true,
+        scaleShowLabels: true,
+        bezierCurve: false,
+      });
+
+    </script>
+
+
+  </center>
+<footer class="page-footer font-small blue">
+
+    <!-- Copyright -->
+    <div class="footer-copyright text-center py-3">Data collected from:
+        <a href="https://www.mohfw.gov.in/" target="_blank"> Ministry of Health and Family Welfare | GOI</a>
+    </div>
+   <div class="footer-copyright text-center py-3">Designed by:
+        <a href="https://sites.google.com/view/gauravkumarraghav" target="_blank"> Gaurav Kumar Raghav</a>
+    </div>
+    <!-- Copyright -->
+
+</footer>
+</body>
+<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+
+
+</html>
+
