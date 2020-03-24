@@ -1,142 +1,95 @@
-import matplotlib.pyplot as plt
-import pandas as pd
-from itertools import groupby
-
-import matplotlib.cm
-
-from mpl_toolkits.basemap import Basemap
-
-from matplotlib.patches import Polygon
-from matplotlib.collections import PatchCollection
-from matplotlib.colors import Normalize
+from matplotlib import pyplot as plt
 import numpy as np
+import pandas as pd
+import datetime
+from datetime import date
+to_date = date.today()
+#Number of top countries to be reported
+topCountryNum = 23
 
-data = pd.read_csv('corona-virus-cases.csv')
-states_group = data.groupby(by = 'Name of State / UT')
-in_case_list = []
-for_case_list = []
-cured_list = []
-dead_list = []
+#Graph size matters
+desired_width=360
+pd.set_option('display.width', desired_width)
+pd.set_option('display.max_columns',120)
 
-for key, group in states_group:
-	in_case = 0
-	for_case = 0
-	dead = 0
-	cure = 0	
-	for row in group.iterrows():
-        	in_case += row[1][1]
-		for_case += row[1][2]
-		dead += row[1][4]
-		cure += row[1][3]
-    	in_case_list.append((key,in_case))
-	for_case_list.append((key,for_case))
-	dead_list.append((key,dead))
-	cured_list.append((key,cure))
-fig, ax = plt.subplots() 
-m = Basemap(resolution='c', projection='merc', lat_0=54.5, lon_0=-4.36, llcrnrlon=68., llcrnrlat=6., urcrnrlon=97., urcrnrlat=37.)
+#Format the date time to present on the graph
+dt = datetime.datetime.now()
+today = dt.strftime("%A, %d %B %Y, %H:%M:%S")
+todayDate = dt.strftime("%A, %d %B %Y")
+#Local method to plot the bar graph
+def plotGraph(dfname, rowname, colname, fignum, graphcolor, titlestr):
+	x1 = dfname[rowname]
+	y1 = dfname[colname]
+	plt.figure(fignum, figsize=(16, 6))
+	plt.title(titlestr + r"$\bf{" + colname + "}$" + ' - [Total states effected as of today = {}]'.format(cv.shape[0]))
+	plt.suptitle(today)
+	plt.xlabel("States")
+	plt.ylabel(colname)
+	plt.xticks(rotation=15)
+	barplot = plt.bar(x1, y1, color=graphcolor)
+	plt.grid(True)
+	for bar in barplot:
+		yval = bar.get_height()
+		plt.text(bar.get_x() + bar.get_width() / 2.0, yval, int(yval), va='bottom')  # va: vertical alignment y positional argument
+    #plt.show()
+	plt.savefig("barchart"+str(fignum)+".png")
+	return()
 
-m.drawmapboundary(fill_color='#46bcec')
-m.fillcontinents(color='#f2f2f2', lake_color='#46bcec')
-m.drawcoastlines()
+#----WORLD DATA----#
+#Read the coronoa_virus.csv from the file system and transform into a DataFrame using read_csv() method
+cv = pd.read_csv("data/"+str(to_date)+"_corona.csv")
+cv = cv.fillna(0) #<-- Fill all NaN values with 0
+cv["total case"] = cv['Total Confirmed cases (Indian National)']+cv['Total Confirmed cases ( Foreign National )']
+#Plot the pie chart for World Data ('Total cases', 'Total recovered', 'Total deaths', 'Active cases')
+s = cv.sum(axis=0) #<--Add all columns and create a series
+totalCase = s['total case']
+totalRecovered = s['Cured/Discharged/Migrated']
+totalDeaths = s['Death']
 
-m.readshapefile('IND_adm/IND_adm1','INDIA')
 
-in_satlist = []
-dead_satlist = []
-cured_satlist = []
-for state_info in m.INDIA_info:
-	state = state_info['NAME_1']
-    	sat1 = 0
-	sat3 = 0 
-	sat4 = 0
-	for i in range(0,len(in_case_list)):
-		if in_case_list[i][0] == state:
-			sat1 = in_case_list[i][1]+for_case_list[i][1]
-			sat3 = dead_list[i][1]
-			sat4 = cured_list[i][1]
-            		break
-	in_satlist.append(sat1)
-	dead_satlist.append(sat3)
-	cured_satlist.append(sat4)
+# Pie chart plotting
+labels = 'Total Recovered', 'Total Cases', 'Total Deaths'
+sizes = [totalRecovered, totalCase, totalDeaths]
+explode = (0.0, 0.0, 0.3)  # only "explode" the 3rd slice (i.e. 'Total Deaths')
 
-df_case_in = pd.DataFrame({'shapes':[Polygon(np.array(shape), True) for shape in m.INDIA],
-                       'area':[area['NAME_1'] for area in m.INDIA_info],
-                       'satlist': in_satlist})    
-shapes = [Polygon(np.array(shape), True) for shape in m.INDIA]
-
-cmap_in = plt.get_cmap('Oranges')
-pc_in = PatchCollection(shapes, zorder=2)
-
-norm = Normalize()
-pc_in.set_facecolor(cmap_in(norm(df_case_in['satlist'].fillna(0).values)))
-ax.add_collection(pc_in)
-
-mapper = matplotlib.cm.ScalarMappable(cmap=cmap_in)
-mapper.set_array(in_satlist)
-plt.colorbar(mapper, shrink=0.4)
-
-ax.set_title('Total Indian case found')
-plt.rcParams['figure.figsize'] = [15,15]
-plt.savefig("static/image/heatmap_in.png")
+fig1, ax1 = plt.subplots()
+ax1.pie(sizes, explode=explode, labels=labels, autopct='%1.f%%',
+        shadow=True, startangle=50)
+ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+ax1.set(aspect="equal", title='Total Global Cases as of {} = {}'.format(todayDate, totalCase))
 #plt.show()
+plt.savefig("pie_chart.png")
+#Sorting the data based on a single column in a file and output using sort_values() method (descending order - ascending=False)
+cv_TotalCases = cv.sort_values("total case", ascending=False)
+cv_TotalRecovered = cv.sort_values('Cured/Discharged/Migrated', ascending=False)
+#cv_TotalCasesPerMillion = cv.sort_values('Total cases per 1M pop.', ascending=False)
+cv_TotalDeaths = cv.sort_values('Death', ascending=False)
+#cv_NewCases = cv.sort_values('New cases', ascending=False)
+#cv_NewDeaths = cv.sort_values('New deaths', ascending=False)
 
+#Graph of top 'Total cases'
+x = cv_TotalCases.head(topCountryNum)
+rowcategory = "Name of State / UT"
+columncategory = "total case"
+figureNum = 1
+graphColor = "Red"
+titlestring = "Top {} states based on: ".format(topCountryNum)
+plotGraph(x, rowcategory, columncategory, figureNum, graphColor, titlestring)
 
-#------------------------------
-fig, ax = plt.subplots() 
-m = Basemap(resolution='c', projection='merc', lat_0=54.5, lon_0=-4.36, llcrnrlon=68., llcrnrlat=6., urcrnrlon=97., urcrnrlat=37.)
+#Graph of top 'Total recovered'
+x = cv_TotalRecovered.head(topCountryNum)
+rowcategory = "Name of State / UT"
+columncategory = "Cured/Discharged/Migrated"
+figureNum = 2
+graphColor = "limegreen"
+titlestring = "Top {} States based on: ".format(topCountryNum)
+plotGraph(x, rowcategory, columncategory, figureNum, graphColor, titlestring)
 
-m.drawmapboundary(fill_color='#46bcec')
-m.fillcontinents(color='#f2f2f2', lake_color='#46bcec')
-m.drawcoastlines()
-
-m.readshapefile('IND_adm/IND_adm1','INDIA')
-df_case_cure = pd.DataFrame({'shapes':[Polygon(np.array(shape), True) for shape in m.INDIA],
-                       'area':[area['NAME_1'] for area in m.INDIA_info],
-                       'satlist': cured_satlist})
-shapes = [Polygon(np.array(shape), True) for shape in m.INDIA]
-cmap_cure = plt.get_cmap('Greens')
-pc_cure = PatchCollection(shapes, zorder=2)
-
-norm = Normalize()
-pc_cure.set_facecolor(cmap_cure(norm(df_case_cure['satlist'].fillna(0).values)))
-ax.add_collection(pc_cure)
-
-mapper = matplotlib.cm.ScalarMappable(cmap=cmap_cure)
-mapper.set_array(cured_satlist)
-plt.colorbar(mapper, shrink=0.4)
-
-ax.set_title('Total Cured cases')
-plt.rcParams['figure.figsize'] = [15,15]
-#plt.show()
-plt.savefig("static/image/heatmap_cure.png")
-
-#------------------------------
-
-fig, ax = plt.subplots() 
-m = Basemap(resolution='c', projection='merc', lat_0=54.5, lon_0=-4.36, llcrnrlon=68., llcrnrlat=6., urcrnrlon=97., urcrnrlat=37.)
-
-m.drawmapboundary(fill_color='#46bcec')
-m.fillcontinents(color='#f2f2f2', lake_color='#46bcec')
-m.drawcoastlines()
-
-m.readshapefile('IND_adm/IND_adm1','INDIA')
-df_case_dead = pd.DataFrame({'shapes':[Polygon(np.array(shape), True) for shape in m.INDIA],
-                       'area':[area['NAME_1'] for area in m.INDIA_info],
-                       'satlist': dead_satlist})
-shapes = [Polygon(np.array(shape), True) for shape in m.INDIA]
-cmap_dead = plt.get_cmap('Reds')
-pc_dead = PatchCollection(shapes, zorder=2)
-
-norm = Normalize()
-pc_dead.set_facecolor(cmap_dead(norm(df_case_dead['satlist'].fillna(0).values)))
-ax.add_collection(pc_dead)
-
-mapper = matplotlib.cm.ScalarMappable(cmap=cmap_dead)
-mapper.set_array(dead_satlist)
-plt.colorbar(mapper, shrink=0.4)
-
-ax.set_title('Total Dead')
-plt.rcParams['figure.figsize'] = [15,15]
-#plt.show()
-plt.savefig("static/image/heatmap_dead.png")
-
+#Graph of top 'Total deaths'
+x = cv_TotalDeaths.head(topCountryNum)
+rowcategory = "Name of State / UT"
+columncategory = "Death"
+figureNum = 3
+graphColor = "dimgray"
+titlestring = "Top {} States based on: ".format(topCountryNum)
+plotGraph(x, rowcategory, columncategory, figureNum, graphColor, titlestring)
